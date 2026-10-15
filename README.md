@@ -1,5 +1,7 @@
 # TouchScene · Android 手机相机版
 
+[![Android checks](https://github.com/aladyaraya/Touchscene/actions/workflows/android.yml/badge.svg?branch=only-for-android)](https://github.com/aladyaraya/Touchscene/actions/workflows/android.yml)
+
 通过手机拍照或选择本地图片，沿用原 Demo 的 OpenCV 边缘／GrabCut 轮廓处理，
 让用户通过触摸位置和手机整体振动探索平面结构；百炼负责原图描述与语音指令。
 手机单马达不会产生局部触觉像素，轮廓可感知程度仍需真实用户验证。
