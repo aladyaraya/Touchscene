@@ -1,5 +1,7 @@
 # TouchScene · Android 手机相机版
 
+<img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="96" height="96" alt="TouchScene 应用图标：温暖的轮廓线与触点">
+
 [![Android checks](https://github.com/aladyaraya/Touchscene/actions/workflows/android.yml/badge.svg?branch=only-for-android)](https://github.com/aladyaraya/Touchscene/actions/workflows/android.yml)
 
 通过手机拍照或选择本地图片，沿用原 Demo 的 OpenCV 边缘／GrabCut 轮廓处理，
@@ -37,6 +39,7 @@ Node 22+ 用于仓库检查，无 npm 依赖。先执行源码检查，再构建
 
 ```sh
 node --test tests/minimal-baseline.test.mjs
+node --test tests/app-icon.test.mjs
 cd android
 ./gradlew --no-daemon -Pkotlin.incremental=false :app:testDebugUnitTest :app:assembleDebug :app:assembleRelease :app:assembleDebugAndroidTest :app:lintDebug
 cd ..
@@ -66,6 +69,7 @@ APK 只在本机 `android/app/build/outputs/apk/` 生成，不提交 Git。调�
 - [验收结果、已知问题和待体验项目](docs/ACCEPTANCE.md)
 - [开发与交接规范](docs/MAINTENANCE.md)
 - [第三方依赖与许可证](docs/THIRD_PARTY.md)
+- [应用图标、矢量母版与资源生成](docs/branding/README.md)
 - [本次分支整理规格与进度](docs/publication/TASKS.md)
 
 CI 不使用云 Key，不发布 APK，不运行需要手机的感知验收。原有两个隐藏容器 Lint 错误有精确基线，

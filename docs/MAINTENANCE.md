@@ -17,6 +17,10 @@
 3. `node --test tests/native-apk.test.mjs`：3 项原生来源与两个实际 APK 检查；缺包不跳过。
 4. 触及相机／语音／触觉行为时，另做仪器测试和必要真机／人工验证，不能把编译成功当成效果通过。
 
+应用图标另执行 `node --test tests/app-icon.test.mjs`；修改图标时按
+[图标维护说明](branding/README.md) 重新生成，并运行 `python tools/generate_icons.py --check`。
+CI 安装锁定的维护工具 Pillow 后验证生成一致性，不新增 Android 运行依赖。
+
 CI 固定 Actions 的完整 commit SHA，只有 `contents: read`，不接入云 Key；pull_request 使用普通事件，
 不使用可执行不可信代码且带权限的 pull_request_target。缓存不应包含 local.properties 或工作区凭据。
 只上传 JVM／Lint 报告，保留 14 天，不上传 APK 或整个 build 目录。

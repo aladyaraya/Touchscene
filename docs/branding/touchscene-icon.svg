@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Generated from icon-spec.json. ViewBox is the launcher's central 72dp viewport. -->
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="18 18 72 72"
+    role="img" aria-labelledby="title description">
+  <title id="title">TouchScene</title>
+  <desc id="description">A soft terracotta contour and a brown touch point on warm cream.</desc>
+  <rect x="18" y="18" width="72" height="72" fill="#FFF3E6" />
+  <path d="M72.5,52 C74.5,40,65,29.5,53,29.5 C39.5,29.5,28.5,40.5,29.5,53.5 C30.5,67,41.5,78.5,55,77 C61,76.5,66,73.5,69.5,69.5" fill="none" stroke="#B9563F"
+      stroke-width="4.5" stroke-linecap="round" stroke-linejoin="round" />
+  <circle cx="75" cy="61.5"
+      r="5.5" fill="#713E32" />
+</svg>

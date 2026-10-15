@@ -1,0 +1,2 @@
+# Optional maintainer-only asset generation; not an Android runtime dependency.
+Pillow==12.2.0
