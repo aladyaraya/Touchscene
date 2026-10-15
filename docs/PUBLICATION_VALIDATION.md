@@ -19,3 +19,14 @@
 本次不重新运行仪器、云端或手机测试，历史结果另见 ACCEPTANCE.md。
 随提交记录的是推送前快照；发布后的 CI 请以对应提交的 [Actions](https://github.com/aladyaraya/Touchscene/actions/workflows/android.yml)
 结果为准，未运行时不预记通过。远端分支／重新拉取结果在交接时另行报告。
+
+## 初次推送后的核对
+
+初次发布提交 `60301d33f9d21024c84f06dc45a378225fcdfd0c` 的父提交仍是原 `3eea391`，
+远端规范 tree SHA 与本地完全一致。全新远端 depth-1 浅克隆及不含 `.git` 的 ZIP 均通过 11 项源保护和
+1 项原生来源检查；这两种未构建副本没有运行那两项需要 APK 的检查，不将其记为 14 项通过。
+新副本无 local.properties，不依赖 Git LFS。
+
+首次 CI 在 SDK 初始化阶段失败：固定版本的 setup-android 默认尝试安装已不存在的旧 `tools` 包，
+尚未进入应用构建。现显式只安装 platform-tools，并保留后续 SDK35／Build Tools 安装步骤。
+此修正仅涉及 CI，不改变应用；后续 CI 结果以关联提交的运行记录为准，不将首轮失败写成成功。
