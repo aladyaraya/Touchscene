@@ -2,10 +2,6 @@ package com.insta360.kmpsdk.demo.touchscene
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
-import android.net.NetworkRequest
 import android.util.Base64
 import com.insta360.kmpsdk.demo.BuildConfig
 import com.insta360.kmpsdk.demo.raw.Yuv420Frame
@@ -15,16 +11,11 @@ import timber.log.Timber
 import java.io.ByteArrayOutputStream
 import java.net.HttpURLConnection
 import java.net.URL
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
 
 /**
  * 冻结帧远程 AI 描述，走阿里百炼 OpenAI 兼容协议（chat/completions，qwen-vl 视觉模型）。
  *
- * 网络：相机热点没有互联网，且连相机时进程被 bindProcessToNetwork 绑在相机
- * Wi-Fi 上，因此请求必须逐连接显式绑定到可上网的 Network：优先 USB 以太网
- * （TRANSPORT_ETHERNET），蜂窝（TRANSPORT_CELLULAR）兜底；不切换进程默认路由。
+ * 手机相机输入直接使用系统默认网络（Wi-Fi / 蜂窝 / VPN），不申请相机热点专用路由。
  *
  * 凭据：endpoint/key/model 通过 gradle 属性 `touchscene.ai.endpoint` /
  * `touchscene.ai.key` / `touchscene.ai.model` 注入 BuildConfig，不进版本库；
@@ -41,7 +32,6 @@ class RemoteAiSceneDescriber(
     private val connectTimeoutMs: Int = 5_000,
     private val readTimeoutMs: Int = 15_000,
 ) : SceneDescriber {
-    private val connectivityManager = context.getSystemService(ConnectivityManager::class.java)
 
     val isConfigured: Boolean get() = endpoint.isNotBlank() && apiKey.isNotBlank()
 
@@ -53,10 +43,7 @@ class RemoteAiSceneDescriber(
     }
 
     private fun describeRemote(frame: Yuv420Frame): SceneDescription {
-        val url = URL(endpoint)
-        require(url.protocol == "https" && url.host.endsWith(BAILIAN_HOST_SUFFIX)) {
-            "remote AI endpoint must be https on *$BAILIAN_HOST_SUFFIX"
-        }
+        val url = checkedBailianUrl(endpoint)
         val bitmap = frame.toRgbDebugBitmap(frame.width, frame.height)
         val jpegBase64 = try {
             val output = ByteArrayOutputStream()
@@ -73,81 +60,21 @@ class RemoteAiSceneDescriber(
     }
 
     private fun post(url: URL, body: String): String {
-        // 只把这一条连接绑到可上网的 Network；进程默认绑定仍留在相机 Wi-Fi 上。
-        // lease 必须在整个请求完成后才释放：openConnection 不会真正发起连接，
-        // 提前注销回调可能让系统在请求中途拆掉这条网络。
-        val lease = awaitInternetNetwork()
+        val connection = url.openConnection() as HttpURLConnection
         try {
-            val connection = (lease?.openConnection(url) ?: url.openConnection()) as HttpURLConnection
-            try {
-                connection.connectTimeout = connectTimeoutMs
-                connection.readTimeout = readTimeoutMs
-                connection.requestMethod = "POST"
-                connection.doOutput = true
-                connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-                connection.setRequestProperty("Authorization", "Bearer $apiKey")
-                connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
-                val code = connection.responseCode
-                val stream = if (code in 200..299) connection.inputStream else connection.errorStream
-                val text = stream?.use { it.readBytes().toString(Charsets.UTF_8) }.orEmpty()
-                if (code !in 200..299) error("remote AI HTTP $code: ${text.take(200)}")
-                return text
-            } finally {
-                connection.disconnect()
-            }
+            connection.connectTimeout = connectTimeoutMs
+            connection.readTimeout = readTimeoutMs
+            connection.instanceFollowRedirects = false
+            connection.requestMethod = "POST"
+            connection.doOutput = true
+            connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+            connection.setRequestProperty("Authorization", "Bearer $apiKey")
+            connection.outputStream.use { it.write(body.toByteArray(Charsets.UTF_8)) }
+            val code = connection.responseCode
+            if (code !in 200..299) error("remote AI HTTP $code")
+            return connection.inputStream.use { it.readBytes().toString(Charsets.UTF_8) }
         } finally {
-            lease?.release()
-        }
-    }
-
-    private fun awaitInternetNetwork(): NetworkLease? =
-        awaitNetwork(NetworkCapabilities.TRANSPORT_ETHERNET, ethernetWaitMs)
-            ?: awaitNetwork(NetworkCapabilities.TRANSPORT_CELLULAR, cellularWaitMs)
-
-    private fun awaitNetwork(transportType: Int, waitMs: Long): NetworkLease? {
-        val manager = connectivityManager ?: return null
-        val latch = CountDownLatch(1)
-        val found = AtomicReference<Network?>()
-        val callback = object : ConnectivityManager.NetworkCallback() {
-            override fun onAvailable(network: Network) {
-                found.compareAndSet(null, network)
-                latch.countDown()
-            }
-
-            override fun onUnavailable() {
-                latch.countDown()
-            }
-        }
-        return runCatching {
-            manager.requestNetwork(
-                NetworkRequest.Builder()
-                    .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-                    .addTransportType(transportType)
-                    .build(),
-                callback,
-                waitMs.toInt(),
-            )
-            latch.await(waitMs + 500L, TimeUnit.MILLISECONDS)
-            found.get()?.let {
-                Timber.d("remote AI bound to network transport=%s", transportName(transportType))
-                NetworkLease(manager, callback, it)
-            }
-        }.onFailure { Timber.w(it, "request %s network for remote AI", transportName(transportType)) }
-            .getOrElse {
-                runCatching { manager.unregisterNetworkCallback(callback) }
-                null
-            }
-    }
-
-    private class NetworkLease(
-        private val manager: ConnectivityManager,
-        private val callback: ConnectivityManager.NetworkCallback,
-        private val network: Network,
-    ) {
-        fun openConnection(url: URL) = network.openConnection(url)
-
-        fun release() {
-            runCatching { manager.unregisterNetworkCallback(callback) }
+            connection.disconnect()
         }
     }
 
@@ -155,9 +82,18 @@ class RemoteAiSceneDescriber(
         private const val JPEG_QUALITY = 80
         private const val MAX_TOKENS = 220
         internal const val BAILIAN_HOST_SUFFIX = ".maas.aliyuncs.com"
+        internal const val BAILIAN_BEIJING_HOST = "dashscope.aliyuncs.com"
         private const val PROMPT =
             "请根据照片输出简体中文 JSON，只包含一个 description 字段。" +
                 "用一句简短中文描述：主要主体是什么、在画面什么位置、大约占多大，供盲人摄影者判断构图。"
+
+        internal fun checkedBailianUrl(endpoint: String): URL = URL(endpoint).also {
+            require(it.protocol == "https" && it.port in listOf(-1, 443) &&
+                (it.host == BAILIAN_BEIJING_HOST || it.host.endsWith(BAILIAN_HOST_SUFFIX)) &&
+                it.userInfo == null && it.query == null && it.ref == null) {
+                "remote AI endpoint must use an approved HTTPS Bailian host"
+            }
+        }
 
         /** 百炼 OpenAI 兼容 chat/completions 请求体；jpegBase64 不带 data: 前缀。 */
         internal fun buildRequestBody(model: String, jpegBase64: String): String =
@@ -209,11 +145,5 @@ class RemoteAiSceneDescriber(
             return description.ifEmpty { content }
         }
 
-        private fun transportName(transportType: Int): String = when (transportType) {
-            NetworkCapabilities.TRANSPORT_ETHERNET -> "ethernet"
-            NetworkCapabilities.TRANSPORT_CELLULAR -> "cellular"
-            NetworkCapabilities.TRANSPORT_WIFI -> "wifi"
-            else -> "transport-$transportType"
-        }
     }
 }

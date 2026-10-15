@@ -1,4 +1,11 @@
-# Copy this file to local.properties (which is gitignored) and fill in local values.
-sdk.dir=C\:\\Android\\Sdk
-insta360.maven.username=provided-by-insta360-developer-application
-insta360.maven.password=provided-by-insta360-developer-application
+# Copy to local.properties (gitignored). Android Studio can supply sdk.dir.
+# Alternatively set ANDROID_HOME / ANDROID_SDK_ROOT outside this repository.
+# sdk.dir=/absolute/path/to/Android/Sdk
+
+# Optional cloud features. Supply your own authorized Key locally; never commit it.
+touchscene.ai.endpoint=https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions
+touchscene.ai.key=
+touchscene.ai.model=qwen3.8-flash
+touchscene.ai.asrModel=qwen-audio-3.0-asr-flash
+
+# Release always overrides endpoint and Key to empty; it is not cloud-configured.

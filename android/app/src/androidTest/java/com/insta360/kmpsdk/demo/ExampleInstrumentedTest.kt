@@ -19,6 +19,6 @@ class ExampleInstrumentedTest {
     fun useAppContext() {
         // Context of the app under test.
         val appContext = InstrumentationRegistry.getInstrumentation().targetContext
-        assertEquals("com.insta360.kmpsdk.demo", appContext.packageName)
+        assertEquals("com.touchscene.minimal", appContext.packageName)
     }
 }

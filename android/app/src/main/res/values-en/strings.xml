@@ -626,4 +626,21 @@
     <string name="touchscene_enter_preview_hero">Enter Tactile Exploration</string>
     <string name="touchscene_enter_preview_sub">Launch accessible live video stream &amp; tactile canvas</string>
     <string name="touchscene_status_ready">System ready, awaiting connection</string>
+    <string name="hold_mic_hint">Hold to speak, release to send</string>
+    <string name="hold_mic_recording">Recording, release to send</string>
+    <string name="hold_mic_processing">Recognizing…</string>
+    <string name="hold_mic_button_description">Hold to speak, release to send. With TalkBack, double-tap and hold to speak, then release to send.</string>
+    <string name="hold_mic_button_recording_description">Recording, release to send. With TalkBack, keep holding and release to send.</string>
+    <string name="hold_mic_button_processing_description">Recognizing speech, please wait.</string>
+    <string name="hold_layer_gesture_hint">Double-tap the image to switch modes</string>
+    <string name="unified_action_live">Tap to describe this view\nHold to speak</string>
+    <string name="unified_action_frozen">Tap to return to live view\nHold to speak</string>
+    <string name="unified_action_recording">Recording video\nHold and say “Stop recording”</string>
+    <string name="unified_action_processing">Recognizing…</string>
+    <string name="unified_action_listening">Speak now, release to send</string>
+    <string name="unified_action_description">Tap to describe this view or return to live view. Hold to speak and release to send. With TalkBack, double-tap to activate, or double-tap and hold to speak, then release to send.</string>
+    <string name="unified_home_camera">Open camera</string>
+    <string name="unified_home_image">Explore local image</string>
+    <string name="unified_home_open_camera">Opening camera</string>
+    <string name="unified_home_open_picker">Opening local image picker</string>
 </resources>

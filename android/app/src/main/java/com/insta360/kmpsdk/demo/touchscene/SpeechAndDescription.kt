@@ -156,11 +156,17 @@ class AndroidSpeechOutput(
     context: Context,
     private val onSpeakingChanged: (Boolean) -> Unit = {},
 ) : TextToSpeech.OnInitListener, AutoCloseable {
+    private val appContext = context.applicationContext
+    private val handler = android.os.Handler(android.os.Looper.getMainLooper())
     private val lastText = AtomicReference<String?>(null)
     private val activeUtteranceId = AtomicReference<String?>(null)
     private val pendingText = AtomicReference<String?>(null)
-    private val tts = TextToSpeech(context.applicationContext, this)
+    private val requestGeneration = java.util.concurrent.atomic.AtomicLong()
+    private val cloudSpeech = CloudTtsFallback(appContext, onSpeakingChanged, ::showSpeechFailure)
+    private val tts = TextToSpeech(appContext, this)
     @Volatile private var ready = false
+    @Volatile private var initializationFinished = false
+    @Volatile private var closed = false
 
     init {
         tts.setOnUtteranceProgressListener(
@@ -169,34 +175,74 @@ class AndroidSpeechOutput(
                 override fun onDone(utteranceId: String?) = finishUtterance(utteranceId)
                 override fun onStop(utteranceId: String?, interrupted: Boolean) = finishUtterance(utteranceId)
                 @Deprecated("Deprecated in Java")
-                override fun onError(utteranceId: String?) = finishUtterance(utteranceId)
+                override fun onError(utteranceId: String?) = fallbackAfterSystemFailure(utteranceId)
             },
         )
+        handler.postDelayed({
+            if (!closed && !initializationFinished) {
+                initializationFinished = true
+                pendingText.getAndSet(null)?.let(cloudSpeech::speak)
+            }
+        }, SYSTEM_INITIALIZATION_TIMEOUT_MS)
     }
 
     override fun onInit(status: Int) {
-        ready = status == TextToSpeech.SUCCESS && tts.setLanguage(Locale.SIMPLIFIED_CHINESE) >= TextToSpeech.LANG_AVAILABLE
-        if (ready) pendingText.getAndSet(null)?.let(::speak)
+        // A failed constructor may invoke this early. Queueing also keeps cloud/player on main.
+        handler.post {
+            if (closed) return@post
+            ready = status == TextToSpeech.SUCCESS &&
+                runCatching { tts.setLanguage(Locale.SIMPLIFIED_CHINESE) }
+                    .getOrDefault(TextToSpeech.LANG_NOT_SUPPORTED) >= TextToSpeech.LANG_AVAILABLE
+            initializationFinished = true
+            pendingText.getAndSet(null)?.let { if (ready) speak(it) else cloudSpeech.speak(it) }
+            // Late READY changes subsequent requests, not a cloud turn that already started.
+        }
     }
 
     fun canSpeak(): Boolean = ready
 
-    fun isSpeaking(): Boolean = activeUtteranceId.get() != null
+    fun isSpeaking(): Boolean = pendingText.get() != null || activeUtteranceId.get() != null || cloudSpeech.isSpeaking
 
     /** Actual engine playback state, used when an OEM TTS omits the utterance onDone callback. */
-    fun isEngineSpeaking(): Boolean = ready && tts.isSpeaking
+    fun isEngineSpeaking(): Boolean = pendingText.get() != null || cloudSpeech.isSpeaking || (ready && tts.isSpeaking)
 
     fun speak(text: String) {
+        if (closed) return
         lastText.set(text)
+        val generation = requestGeneration.incrementAndGet()
+        onMain {
+            if (!closed && generation == requestGeneration.get()) speakCurrent(text)
+        }
+    }
+
+    private fun speakCurrent(text: String) {
+        // Match QUEUE_FLUSH: replacing speech is not an audible-turn completion for the mic.
+        cloudSpeech.stop(notify = false)
         if (!ready) {
-            pendingText.set(text)
+            if (initializationFinished) cloudSpeech.speak(text) else {
+                pendingText.set(text)
+                onSpeakingChanged(true)
+            }
             return
         }
+        pendingText.set(null)
         val utteranceId = UUID.randomUUID().toString()
         activeUtteranceId.set(utteranceId)
         onSpeakingChanged(true)
         if (tts.speak(text, TextToSpeech.QUEUE_FLUSH, Bundle(), utteranceId) == TextToSpeech.ERROR) {
-            finishUtterance(utteranceId)
+            fallbackAfterSystemFailure(utteranceId)
+        }
+    }
+
+    private fun fallbackAfterSystemFailure(utteranceId: String?) {
+        if (utteranceId == null || !activeUtteranceId.compareAndSet(utteranceId, null)) return
+        val generation = requestGeneration.get()
+        val text = lastText.get() ?: return
+        onMain {
+            if (closed || generation != requestGeneration.get()) return@onMain
+            runCatching { tts.stop() }
+            ready = false
+            cloudSpeech.speak(text)
         }
     }
 
@@ -213,16 +259,43 @@ class AndroidSpeechOutput(
     }
 
     fun stop() {
+        val generation = requestGeneration.incrementAndGet()
+        pendingText.set(null)
         activeUtteranceId.set(null)
-        tts.stop()
-        onSpeakingChanged(false)
+        onMain {
+            if (generation != requestGeneration.get()) return@onMain
+            cloudSpeech.stop(notify = false)
+            if (ready) tts.stop()
+            onSpeakingChanged(false)
+        }
     }
 
     override fun close() {
+        if (closed) return
+        closed = true
+        requestGeneration.incrementAndGet()
         pendingText.set(null)
         activeUtteranceId.set(null)
-        tts.stop()
-        tts.shutdown()
-        onSpeakingChanged(false)
+        onMain {
+            cloudSpeech.stop(notify = false)
+            cloudSpeech.close()
+            if (ready) tts.stop()
+            tts.shutdown()
+            handler.removeCallbacksAndMessages(null)
+            onSpeakingChanged(false)
+        }
+    }
+
+    private fun showSpeechFailure(message: String) {
+        if (!closed) android.widget.Toast.makeText(appContext, message, android.widget.Toast.LENGTH_LONG).show()
+    }
+
+    private fun onMain(action: () -> Unit) {
+        if (android.os.Looper.myLooper() == android.os.Looper.getMainLooper()) action() else handler.post(action)
+    }
+
+    private companion object {
+        // 1.5 s system initialization + 6 s cloud preparation remains below the original 8 s mic watchdog.
+        const val SYSTEM_INITIALIZATION_TIMEOUT_MS = 1_500L
     }
 }

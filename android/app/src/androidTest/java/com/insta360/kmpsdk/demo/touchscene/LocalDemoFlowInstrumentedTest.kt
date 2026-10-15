@@ -30,27 +30,8 @@ class LocalDemoFlowInstrumentedTest {
             ?: File(context.filesDir, "touchscene-traces")
         val existingTraces = traceDirectory.listFiles()?.map { it.name }?.toSet().orEmpty()
         val packageName = context.packageName
-        val permissions = mutableListOf(
-            Manifest.permission.ACCESS_FINE_LOCATION,
-            Manifest.permission.ACCESS_COARSE_LOCATION,
-        )
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            permissions += listOf(
-                Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.BLUETOOTH_ADVERTISE,
-            )
-        }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            permissions += listOf(
-                Manifest.permission.POST_NOTIFICATIONS,
-                Manifest.permission.READ_MEDIA_IMAGES,
-                Manifest.permission.READ_MEDIA_VIDEO,
-                Manifest.permission.READ_MEDIA_AUDIO,
-            )
-        } else {
-            permissions += Manifest.permission.READ_EXTERNAL_STORAGE
-        }
+        // 手机适配不再声明或申请厂商连接、定位或全相册权限。
+        val permissions = listOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
         permissions.forEach { instrumentation.uiAutomation.grantRuntimePermission(packageName, it) }
 
         val activity = instrumentation.startActivitySync(
@@ -75,8 +56,9 @@ class LocalDemoFlowInstrumentedTest {
             }
             waitFor(5_000) {
                 onMain {
-                    activity.findViewById<TextView>(R.id.touchscene_status)?.text?.toString() ==
-                        context.getString(R.string.touchscene_exploring_map, 1L)
+                    // 原版状态同时附带计数，并会被自动描述文本覆盖；验证实际 session。
+                    activity.findViewById<TactileMapView>(R.id.tactile_map_view)?.explorationEnabled == true &&
+                        activity.findViewById<Button>(R.id.return_live_btn)?.isEnabled == true
                 }
             }
             val genericMapDescription = context.getString(R.string.touchscene_map_content_description)

@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "abi": "arm64-v8a",
+  "ndkVersion": "25.2.9519653",
+  "ndkRelease": "r25c",
+  "sourceIndex": "https://github.com/android/ndk/wiki/Unsupported-Downloads#r25c",
+  "archive": {
+    "url": "https://dl.google.com/android/repository/android-ndk-r25c-windows.zip",
+    "bytes": 467520926,
+    "publishedSha1": "18c4a3cd108916f553b1bedad2672f2c6cd85a10",
+    "sha256": "f70093964f6cbbe19268f9876a20f92d3a593db3ad2037baadd25fd8d71e84e2"
+  },
+  "runtime": {
+    "path": "src/main/jniLibs/arm64-v8a/libc++_shared.so",
+    "archiveEntry": "android-ndk-r25c/toolchains/llvm/prebuilt/windows-x86_64/sysroot/usr/lib/aarch64-linux-android/libc++_shared.so",
+    "bytes": 6766464,
+    "sha256": "33f661fc80c90913fe365a2bb6ee0bb7ed4c01b9c797fcecf1e60070e00019d6",
+    "buildId": "df3f83af4e54f316c793c3655c4753a8851a234c"
+  },
+  "originalOpenCv": {
+    "path": "src/main/jniLibs/arm64-v8a/libopencv_java4.so",
+    "sha256": "41b906e5a92bdde74c448fffcf71b8927ff77c0aa2f839d9a8e431feec985cc7",
+    "buildId": "8c49264d6e0302480dbef69b206d784d4aa016e2",
+    "ndkVersion": "25.2.9519653"
+  },
+  "notice": {
+    "path": "NDK-r25c-NOTICE.txt",
+    "archiveEntry": "android-ndk-r25c/NOTICE",
+    "sha256": "31b13387e6bde5c7e7006b63ea762020ce583be32e4d62417584c03ac3d3f19a"
+  },
+  "licensing": "The complete unmodified NDK NOTICE is retained, including the LLVM Apache-2.0 WITH LLVM-exception and libc++abi/third-party notices. No vendor camera SDK library is added.",
+  "packagingVerification": "APK guards verify ELF ABI, NEEDED, NDK note, build ID and SHA-256 of normalized PT_LOAD images. Only ELF section-table header fields are normalized, allowing normal AGP removal of non-loadable debug/symbol sections without accepting changes to loaded code or data. Source files retain strict whole-file SHA-256 verification."
+}

@@ -1,23 +1,36 @@
-.DS_Store
-**/.DS_Store
-
-# Local Android configuration and build output
-android/local.properties
-android/.gradle/
-android/.kotlin/
-android/build/
-android/app/build/
-*.iml
-.idea/
-
-# Local dependencies, reports, and credentials
-node_modules/
-coverage/
-*.log
-touchpuck-*-qa.png
+# Local configuration / credentials
+**/local.properties
 .env
 .env.*
+!.env.example
 *.jks
 *.keystore
 *.pem
 *.key
+*.p12
+*.pfx
+
+# All Gradle modules, IDEs and generated output
+**/build/
+**/.gradle/
+**/.kotlin/
+**/.cxx/
+**/.externalNativeBuild/
+**/.idea/
+*.iml
+.vscode/
+local.properties
+node_modules/
+coverage/
+artifacts/
+*.log
+*.hprof
+*.apk
+*.aab
+*.aar
+*.zip
+*.7z
+.DS_Store
+Thumbs.db
+
+# Keep required source dependencies: Gradle wrapper JAR and original JNI .so files.

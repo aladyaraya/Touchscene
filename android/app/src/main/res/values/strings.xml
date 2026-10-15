@@ -626,4 +626,23 @@
     <string name="touchscene_enter_preview_hero">进入触觉感知探索</string>
     <string name="touchscene_enter_preview_sub">开启实时无障碍视频流与触觉画布</string>
     <string name="touchscene_status_ready">系统准备就绪，等待连接</string>
+    <!-- Approved hold-to-talk controls; original SDK/demo prompts remain unchanged. -->
+    <string name="hold_mic_hint">按住说话，松开发送</string>
+    <string name="hold_mic_recording">正在录音，松开发送</string>
+    <string name="hold_mic_processing">正在识别…</string>
+    <string name="hold_mic_button_description">按住说话，松开发送。使用读屏时，双击并按住开始说话，松开发送。</string>
+    <string name="hold_mic_button_recording_description">正在录音，松开发送。使用读屏时保持按住，松开发送。</string>
+    <string name="hold_mic_button_processing_description">正在识别语音，请稍候。</string>
+    <string name="hold_layer_gesture_hint">双击画面切换模式</string>
+    <!-- Approved full-zone controls; original prompts above remain unchanged. -->
+    <string name="unified_action_live">点按描述当前画面\n长按说话</string>
+    <string name="unified_action_frozen">点按恢复实时画面\n长按说话</string>
+    <string name="unified_action_recording">正在录像\n长按说“停止录像”</string>
+    <string name="unified_action_processing">正在识别…</string>
+    <string name="unified_action_listening">请说话，松开发送</string>
+    <string name="unified_action_description">点按描述当前画面或恢复实时画面；长按说话，松开发送。使用读屏时，双击执行点按操作，双击并按住说话，松开发送。</string>
+    <string name="unified_home_camera">打开相机</string>
+    <string name="unified_home_image">本地识图</string>
+    <string name="unified_home_open_camera">正在打开相机</string>
+    <string name="unified_home_open_picker">正在打开本地图片选择器</string>
 </resources>

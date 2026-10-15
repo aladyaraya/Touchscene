@@ -48,8 +48,6 @@ glide = { group = "com.github.bumptech.glide", name = "glide", version.ref = "gl
 glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", version.ref = "glide" }
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
 
-inskmp-camera = { group = "com.arashivision.sdk", name = "sdk-camera", version.ref = "inskmpVersion" }
-inskmp-media = { group = "com.arashivision.sdk", name = "sdk-media", version.ref = "inskmpVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
