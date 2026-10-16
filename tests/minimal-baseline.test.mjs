@@ -17,6 +17,37 @@ const original = file => {
     return fixture.referenceTexts[file];
 };
 const textHash = text => createHash('sha256').update(normalize(text), 'utf8').digest('hex');
+// Reviewed View-only fixes. Restoring these exact lines must recover the
+// ORIGINAL hash, so this cannot silently exempt the rest of the View/algorithm.
+function restoreApprovedSourceFixes(file, text) {
+    if (file === pkg + 'touchscene/AndroidHapticRenderer.kt') {
+        const calls = [
+            'VibrationEffect.createWaveform(SUSTAINED_TIMINGS, SUSTAINED_AMPLITUDES, 0)',
+            'VibrationEffect.createWaveform(timings, repeat)',
+        ];
+        for (const call of calls) {
+            const after = `TouchFeedbackVibration.play(vibrator, ${call})`;
+            assert.equal(text.split(after).length - 1, 1, 'Exactly one reviewed touch-usage adapter: ' + call);
+            text = text.replace(after, `vibrator.vibrate(${call})`);
+        }
+        return text;
+    }
+    if (file !== pkg + 'touchscene/TactileMapView.kt') return text;
+    text = text.replace(/\r\n/g, '\n');
+    const fixes = [
+        ['private fun sampleLayerValue(pixelX: Float, pixelY: Float, point: GridPoint?, cell: TactileCell): Int {\n        if (debugMode == TactileDebugMode.TOUCH_MAP) {',
+            'private fun sampleLayerValue(pixelX: Float, pixelY: Float, point: GridPoint?, cell: TactileCell): Int {\n        if (debugMode == TactileDebugMode.TOUCH_MAP || point == null) {'],
+        ['ContourBandRasterizer.build(result.boundary, result.width, result.height, radius, ignoreCanvasEdges = true)',
+            'ContourHapticMask.build(result.boundary, result.width, result.height, radius)'],
+        ['TactileDebugMode.ORIGINAL -> 0\n            TactileDebugMode.GRAYSCALE -> {',
+            'TactileDebugMode.GRAYSCALE, TactileDebugMode.ORIGINAL -> {'],
+    ];
+    for (const [after, before] of fixes) {
+        assert.equal(text.split(after).length - 1, 1, 'Exactly one approved View fix: ' + after);
+        text = text.replace(after, before);
+    }
+    return text;
+}
 const cloudChanges = new Set(['touchscene/RemoteAiSceneDescriber.kt', 'touchscene/RemoteAsrTranscriber.kt',
     'touchscene/SpeechAndDescription.kt']);
 const previewLayout = 'android/app/src/main/res/layout/fragment_preview.xml';
@@ -110,7 +141,7 @@ function stringEntries(xml) {
     return strings;
 }
 
-test('all original source files except approved cloud adapters retain baseline contents', () => {
+test('original sources retain baseline except approved adapters and exact View/haptic call-site fixes', () => {
     const files = fixture.sources;
     assert.equal(new Set(files.map(item => item.path)).size, 101, 'No duplicate baseline sources');
     let checked = 0;
@@ -118,7 +149,7 @@ test('all original source files except approved cloud adapters retain baseline c
         assert.ok(file.startsWith(pkg) && !file.includes('..'), 'Baseline path must stay in original source root');
         if (cloudChanges.has(file.slice(pkg.length))) continue;
         assert.ok(existsSync(path.join(root, file)), `Original source missing: ${file}`);
-        assert.equal(textHash(source(file)), sha256, file);
+        assert.equal(textHash(restoreApprovedSourceFixes(file, source(file))), sha256, file);
         checked++;
     }
     assert.equal(files.length, 101, 'The original source manifest must not shrink');
@@ -198,14 +229,19 @@ test('camera bottom quarter is one full-area action with only a noninteractive h
     assert.equal(hint['android:layout_marginBottom'], '10dp');
 });
 
-test('unified resources are narrowly added in both locales and every original string remains exact', () => {
+test('unified resources retain original strings except the explicitly approved app name', () => {
     for (const directory of ['values', 'values-en']) {
         const file = `android/app/src/main/res/${directory}/strings.xml`;
         const current = stringEntries(source(file));
         const before = stringEntries(original(file));
-        for (const [name, value] of before) assert.equal(current.get(name), value, `${directory}: original string changed: ${name}`);
+        for (const [name, value] of before) {
+            const expected = name === 'app_name' ? '<string name="app_name">触景Touchscene</string>' : value;
+            assert.equal(current.get(name), expected, `${directory}: original string changed: ${name}`);
+        }
+        assert.match(source('android/app/src/main/AndroidManifest.xml'), /android:label="@string\/app_name"/);
         const additions = [...current.keys()].filter(name => !before.has(name)).sort();
-        assert.deepEqual(additions, [...holdStrings, ...unifiedStrings].sort(), `${directory}: do not expand the resource exception`);
+        assert.deepEqual(additions, [...holdStrings, ...unifiedStrings, 'current_layer_gesture_hint'].sort(), `${directory}: do not expand the resource exception`);
+        assert.equal(current.get('current_layer_gesture_hint'), '<string name="current_layer_gesture_hint">%1$s · %2$s</string>');
         holdStrings.forEach((name, index) => assert.equal(current.get(name),
             `<string name="${name}">${preservedHoldCopy[directory][index]}</string>`,
             `${directory}: preserve the previous hold copy too: ${name}`));

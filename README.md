@@ -1,4 +1,4 @@
-# TouchScene · Android 手机相机版
+# 触景Touchscene · Android 手机相机版
 
 <img src="android/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" width="96" height="96" alt="TouchScene 应用图标：温暖的轮廓线与触点">
 
@@ -9,6 +9,8 @@
 手机单马达不会产生局部触觉像素，轮廓可感知程度仍需真实用户验证。
 
 这是 `only-for-android` 的维护入口，不是历史 Web／ESP32 原型，也不是另一版三页重写应用。
+应用显示名统一为“触景Touchscene”，安装包名仍为 `com.touchscene.minimal`。
+本地目录与安装包位置见 [目录说明](docs/WORKSPACE_LAYOUT.md)。
 
 ## 拉取与打开
 
@@ -50,7 +52,8 @@ Windows 用 `gradlew.bat`。如果 JDK 因中文路径无法加载类，可临�
 盘符后构建，完成后撤销映射；不要修改全局配置或提交本机路径。源码检查支持 ZIP 和浅克隆，
 原生 APK 检查必须先构建 Debug／Release，缺包会明确失败。
 
-APK 只在本机 `android/app/build/outputs/apk/` 生成，不提交 Git。调试包名
+APK 在本机 `android/app/build/outputs/apk/` 生成；内部交付副本集中放在
+`artifacts/internal/`，两处都不提交 Git。调试包名
 `com.touchscene.minimal`；不要卸载旧应用或清除数据。真机仪器测试方法见 [验收记录](docs/ACCEPTANCE.md)。
 
 ## 使用与源码入口
@@ -59,12 +62,20 @@ APK 只在本机 `android/app/build/outputs/apk/` 生成，不提交 Git。调�
 按下短震，长按 500 ms 后开始录音，松开发送，实际录音不足 300 ms 丢弃。
 冻结中可直接说“拍一张”，同一照片保存相册并刷新探索与描述；“录像／录音／摄影”及对应停止命令控制录像。
 双击画面按原顺序切换原图、边缘、轮廓。
+原图仅作视觉查看，不按亮度触发振动；边缘／轮廓层保留各自的触觉探索。
+图片播报描述整张原图的场景、物体和空间关系，不默认挑选单一主体或给构图建议。
+云描述不可用时明确提示，本地类别提示不等于完整图片理解。
+相机页底部显示当前图层；竖图触摸命中与照片外框的修正范围见
+[触摸与轮廓修复说明](docs/TOUCH_CONTOUR_FIX.md)。核心分割算法和振动波形仍保持原始基线。
 
 手机版入口位于 `android/app/src/mobile/java`；共用触觉、相机输入及本地图片页位于
 `android/app/src/main/java/com/insta360/kmpsdk/demo/` 的明确源集子目录。
 同名原 SDK Activity／Preview 等源码仅供参考，不参与构建，不要误改。详见 [架构与边界](docs/ARCHITECTURE.md)。
 
 ## 文档与维护
+
+分类入口：[文档导航](docs/README.md)。本地安装包与诊断材料的约定见
+[目录说明](docs/WORKSPACE_LAYOUT.md)；这些材料不随仓库发布，拉取源码后不存在属正常情况。
 
 - [验收结果、已知问题和待体验项目](docs/ACCEPTANCE.md)
 - [开发与交接规范](docs/MAINTENANCE.md)

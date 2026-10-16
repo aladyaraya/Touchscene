@@ -1,5 +1,8 @@
 # 开发与交接
 
+本地目录分工与输出位置见 [目录说明](WORKSPACE_LAYOUT.md)。当前应用显示名为“触景Touchscene”；
+原始字符串保护只允许这个 `app_name` 变化，不应扩大为整体放开资源检查。
+
 ## 拉取与提交
 
 从 `only-for-android` 创建工作分支，例如 `codex/fix-camera-state`。提交前使用 `git diff` 和
@@ -12,7 +15,11 @@
 
 ## 检查顺序
 
-1. `node --test tests/minimal-baseline.test.mjs`：11 项源保护，原 101 文件中 98 文件不变，三云适配器例外。
+1. `node --test tests/minimal-baseline.test.mjs`：11 项源保护，原 101 文件中 96 文件不变、三云适配器例外；
+   TactileMapView 只允许三处精确修正（移除粗网格空点门槛、替换显示轮廓带生成器、原图采样归零），还原后须匹配原始哈希。
+   不刷新原始基线，不放开整个 View。详情见 [触摸与轮廓修复](TOUCH_CONTOUR_FIX.md)。
+   AndroidHapticRenderer 另只放行两处原振动调用改走触摸用途适配器，还原后仍匹配原哈希；
+   不放开波形、开关、停止、延迟或状态机。API29-32使用声效触觉属性，API33+使用USAGE_TOUCH。
 2. README 中 Gradle 命令：JVM、Debug／无密钥未签名 Release／测试包、Lint。
 3. `node --test tests/native-apk.test.mjs`：3 项原生来源与两个实际 APK 检查；缺包不跳过。
 4. 触及相机／语音／触觉行为时，另做仪器测试和必要真机／人工验证，不能把编译成功当成效果通过。

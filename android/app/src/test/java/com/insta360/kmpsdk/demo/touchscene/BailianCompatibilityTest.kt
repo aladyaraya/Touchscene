@@ -29,15 +29,19 @@ class BailianCompatibilityTest {
         }
     }
 
-    @Test fun `new vision model retains original prompt original JPEG data and protocol`() {
+    @Test fun `vision request describes the whole original image without changing model or protocol`() {
         val body = JSONObject(RemoteAiSceneDescriber.buildRequestBody("qwen3.5-flash", "ORIGINAL_JPEG_FIXTURE"))
         assertEquals("qwen3.5-flash", body.getString("model"))
         assertFalse(body.getBoolean("enable_thinking"))
         assertEquals("json_object", body.getJSONObject("response_format").getString("type"))
         val content = body.getJSONArray("messages").getJSONObject(0).getJSONArray("content")
-        assertEquals("请根据照片输出简体中文 JSON，只包含一个 description 字段。" +
-            "用一句简短中文描述：主要主体是什么、在画面什么位置、大约占多大，供盲人摄影者判断构图。",
-            content.getJSONObject(0).getString("text"))
+        val prompt = content.getJSONObject(0).getString("text")
+        assertTrue(prompt.contains("只包含一个 description 字段"))
+        assertTrue(prompt.contains("描述整张图片的内容"))
+        assertTrue(prompt.contains("相对位置和前后关系"))
+        assertTrue(prompt.contains("不要强行选定单一主体"))
+        assertTrue(prompt.contains("不臆测"))
+        assertFalse(prompt.contains("供盲人摄影者判断构图"))
         assertEquals("data:image/jpeg;base64,ORIGINAL_JPEG_FIXTURE", content.getJSONObject(1)
             .getJSONObject("image_url").getString("url"))
     }
@@ -56,6 +60,25 @@ class BailianCompatibilityTest {
         assertEquals("wav", body.getJSONObject("parameters").getString("format"))
         assertEquals("16000", body.getJSONObject("parameters").getString("sample_rate"))
         assertEquals(mapOf("X-DashScope-SSE" to "disable"), RemoteAsrTranscriber.additionalHeaders(model))
+    }
+
+    @Test fun `offline contour is not presented as a scene description or selected subject`() {
+        val result = RemoteAiSceneDescriber.offlineDescription(
+            SceneDescription("有一处主要轮廓，居中占比较大。", 12L, "local-contour", subject = "轮廓"))
+        assertTrue(result.text.contains("完整图片描述暂不可用"))
+        assertFalse(result.text.contains("主要轮廓"))
+        assertNull(result.subject)
+        assertEquals(12L, result.timestampMs)
+    }
+
+    @Test fun `offline labels are explicitly partial and do not carry contour framing metadata`() {
+        val result = RemoteAiSceneDescriber.offlineDescription(
+            SceneDescription("画面语义可能包含杯子、桌子。", 13L, "mlkit-image-labeling+local-contour",
+                subject = "杯子", position = "居中", framingRisk = "贴边"))
+        assertTrue(result.text.contains("本地识别仅提示：画面语义可能包含杯子、桌子。"))
+        assertNull(result.subject)
+        assertNull(result.position)
+        assertNull(result.framingRisk)
     }
 
     @Test fun `ASR converts compatible vision endpoint to native endpoint without altering original legacy model`() {

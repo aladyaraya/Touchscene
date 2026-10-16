@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Insta360 SDK Demo</string>
+    <string name="app_name">触景Touchscene</string>
     <string name="fg_service_channel_name">相机连接</string>
     <string name="fg_service_channel_description">保持与相机的连接，在切换界面时减少中断</string>
     <string name="fg_service_notification_title">Insta360 SDK Demo</string>
@@ -645,4 +645,5 @@
     <string name="unified_home_image">本地识图</string>
     <string name="unified_home_open_camera">正在打开相机</string>
     <string name="unified_home_open_picker">正在打开本地图片选择器</string>
+    <string name="current_layer_gesture_hint">%1$s · %2$s</string>
 </resources>

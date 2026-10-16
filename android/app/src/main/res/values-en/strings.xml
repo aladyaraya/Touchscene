@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">Insta360 SDK Demo</string>
+    <string name="app_name">触景Touchscene</string>
     <string name="fg_service_channel_name">Camera Connection</string>
     <string name="fg_service_channel_description">Maintain camera connection to reduce interruptions when switching screens</string>
     <string name="fg_service_notification_title">Insta360 SDK Demo</string>
@@ -643,4 +643,5 @@
     <string name="unified_home_image">Explore local image</string>
     <string name="unified_home_open_camera">Opening camera</string>
     <string name="unified_home_open_picker">Opening local image picker</string>
+    <string name="current_layer_gesture_hint">%1$s · %2$s</string>
 </resources>

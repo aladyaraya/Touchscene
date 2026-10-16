@@ -36,11 +36,14 @@ class RemoteAiSceneDescriber(
     val isConfigured: Boolean get() = endpoint.isNotBlank() && apiKey.isNotBlank()
 
     override fun describe(frame: Yuv420Frame, map: TactileMap?): SceneDescription {
-        if (!isConfigured) return fallback.describe(frame, map)
+        if (!isConfigured) return describeOffline(frame)
         return runCatching { describeRemote(frame) }
             .onFailure { Timber.w(it, "remote AI description failed, using fallback") }
-            .getOrElse { fallback.describe(frame, map) }
+            .getOrElse { describeOffline(frame) }
     }
+
+    private fun describeOffline(frame: Yuv420Frame): SceneDescription =
+        offlineDescription(fallback.describe(frame, null))
 
     private fun describeRemote(frame: Yuv420Frame): SceneDescription {
         val url = checkedBailianUrl(endpoint)
@@ -56,7 +59,7 @@ class RemoteAiSceneDescriber(
         val response = post(url, body)
         val text = parseResponseText(response)?.takeIf { it.isNotBlank() }
             ?: error("remote AI response had no description text")
-        return SceneDescription(text, frame.sourceTimestampMs, "bailian-$model", subject = text)
+        return SceneDescription(text, frame.sourceTimestampMs, "bailian-$model")
     }
 
     private fun post(url: URL, body: String): String {
@@ -85,7 +88,18 @@ class RemoteAiSceneDescriber(
         internal const val BAILIAN_BEIJING_HOST = "dashscope.aliyuncs.com"
         private const val PROMPT =
             "请根据照片输出简体中文 JSON，只包含一个 description 字段。" +
-                "用一句简短中文描述：主要主体是什么、在画面什么位置、大约占多大，供盲人摄影者判断构图。"
+                "面向盲人读者，用2至4句简短中文客观描述整张图片的内容：先概括场景或图片类型，" +
+                "再说明可见人物、物体或图形的形状、动作、相对位置和前后关系，以及重要背景。" +
+                "如有清晰文字，可摘述关键内容；无法看清的内容明确说明，不臆测。" +
+                "不要强行选定单一主体，不要只报告主体占比或给出摄影构图建议。"
+
+        internal fun offlineDescription(local: SceneDescription): SceneDescription {
+            val unavailable = "完整图片描述暂不可用，请检查网络或云服务配置后重试。"
+            val text = if (local.source == "local-contour") unavailable
+                else unavailable + "本地识别仅提示：" + local.text
+            // Local labels are partial hints, never a chosen subject or full scene understanding.
+            return SceneDescription(text, local.timestampMs, "local-image-fallback")
+        }
 
         internal fun checkedBailianUrl(endpoint: String): URL = URL(endpoint).also {
             require(it.protocol == "https" && it.port in listOf(-1, 443) &&

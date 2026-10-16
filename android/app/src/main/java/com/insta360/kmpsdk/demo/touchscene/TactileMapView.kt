@@ -186,7 +186,7 @@ class TactileMapView @JvmOverloads constructor(
                         height,
                         resources.displayMetrics.density,
                     )
-                    ContourHapticMask.build(result.boundary, result.width, result.height, radius)
+                    ContourBandRasterizer.build(result.boundary, result.width, result.height, radius, ignoreCanvasEdges = true)
                         .also { contourHapticMask = it }
                 } else {
                     null
@@ -212,7 +212,7 @@ class TactileMapView @JvmOverloads constructor(
      * Other layers sample their own pixel/cell at the touched location.
      */
     private fun sampleLayerValue(pixelX: Float, pixelY: Float, point: GridPoint?, cell: TactileCell): Int {
-        if (debugMode == TactileDebugMode.TOUCH_MAP || point == null) {
+        if (debugMode == TactileDebugMode.TOUCH_MAP) {
             return if (cell == TactileCell.BACKGROUND) 0 else 1
         }
         val snapshot = debugSnapshot ?: return 0
@@ -229,7 +229,8 @@ class TactileMapView @JvmOverloads constructor(
                 sampleAnalysisBool(pixelX, pixelY, band, snapshot.result.width, snapshot.result.height)
             }
             TactileDebugMode.EDGE -> sampleAnalysisBool(pixelX, pixelY, snapshot.result.cannyEdges, snapshot.result.width, snapshot.result.height)
-            TactileDebugMode.GRAYSCALE, TactileDebugMode.ORIGINAL -> {
+            TactileDebugMode.ORIGINAL -> 0
+            TactileDebugMode.GRAYSCALE -> {
                 val gray = snapshot.result.gray
                 val gWidth = snapshot.result.width
                 val gHeight = snapshot.result.height

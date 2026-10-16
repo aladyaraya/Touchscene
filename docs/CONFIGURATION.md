@@ -24,7 +24,7 @@ Key 失效时检查授权／模型开通情况，不擅自换服务。不要把 
 
 ## 安装到自有测试设备
 
-本轮仓库整理不重新安装手机。以后明确需要安装时，先自行确认设备授权，再从 `android/` 执行：
+仓库发布不会自动安装手机。持机者明确要求更新后，先确认设备授权，再从 `android/` 执行：
 
 ```sh
 adb -s YOUR_DEVICE_SERIAL install -r app/build/outputs/apk/debug/app-debug.apk

@@ -242,6 +242,7 @@ class PreviewFragment : Fragment() {
         holdAudioBusy = false
         controlPressFeedback = ControlPressFeedback(requireContext())
         setupTouchScene()
+        updateDisplayedLayerHint(binding.tactileMapView.debugMode)
         bindUnifiedAction(binding.toggleDescribeLiveBtn)
         refreshUnifiedAction()
         binding.captureBtn.setOnClickListener { takePhonePhoto() }
@@ -397,6 +398,7 @@ class PreviewFragment : Fragment() {
         // 双击图层循环切换：原图 -> Canny图层 -> 二值图层 -> 原图
         // 由于循环顺序固定，目标图层唯一决定本次切换，语音直接按目标播报
         binding.tactileMapView.onDebugModeChanged = { mode ->
+            updateDisplayedLayerHint(mode)
             updateLivePreviewVisibility()
             val promptRes = when (mode) {
                 TactileDebugMode.ORIGINAL -> R.string.touchscene_layer_to_original
@@ -618,6 +620,16 @@ class PreviewFragment : Fragment() {
         binding.touchsceneStatus.setText(R.string.touchscene_no_frame)
         traceEvent("map", "freeze_failed", code = code)
         speakFeedback(getString(R.string.touchscene_no_frame))
+    }
+
+    private fun updateDisplayedLayerHint(mode: TactileDebugMode) {
+        val label = when (mode) {
+            TactileDebugMode.EDGE -> R.string.touchscene_local_image_layer_edge
+            TactileDebugMode.BINARY -> R.string.touchscene_local_image_layer_outline
+            else -> R.string.touchscene_local_image_layer_original
+        }
+        _binding?.layerGestureHint?.text = getString(R.string.current_layer_gesture_hint,
+            getString(label), getString(R.string.hold_layer_gesture_hint))
     }
 
     private fun finishStillRequest(map: TactileMap?) {

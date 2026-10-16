@@ -80,12 +80,12 @@ class AndroidHapticRenderer(context: Context) {
 
     private fun startSustained() {
         vibrator.cancel()
-        vibrator.vibrate(VibrationEffect.createWaveform(SUSTAINED_TIMINGS, SUSTAINED_AMPLITUDES, 0))
+        TouchFeedbackVibration.play(vibrator, VibrationEffect.createWaveform(SUSTAINED_TIMINGS, SUSTAINED_AMPLITUDES, 0))
     }
 
     private fun playWaveform(timings: LongArray, repeat: Int) {
         if (!enabled || !vibrator.hasVibrator()) return
-        vibrator.vibrate(VibrationEffect.createWaveform(timings, repeat))
+        TouchFeedbackVibration.play(vibrator, VibrationEffect.createWaveform(timings, repeat))
     }
 
     companion object {
